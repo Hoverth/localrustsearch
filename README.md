@@ -1,10 +1,5 @@
-# Local Search Engine in Rust
+# Local Rust Search Engine
 
-**THIS SOFTWARE IS UNFINISHED!!! Don't have any high expectations.**
+based off of [Local Search Engine in Rust](https://github.com/tsoding/seroots) by [Tsoding](https://github.com/tsoding)
 
-## Quick Start
-
-```console
-$ cargo run serve ./folder/
-$ iexplore.exe http://localhost:6969/
-```
+Relicensed under the AGPL from the original MIT licensed seroost package
