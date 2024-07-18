@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
+use std::process::Command;
 
 use super::model::*;
 
@@ -11,6 +12,8 @@ pub const GREY: &str = "\x1b[90;3m";
 
 pub fn start(model: Arc<Mutex<Model>>) -> Result<(), ()> {
     println!("{BOLD}Enter search:{RESET}");
+    let mut prev_results: Vec<(usize, String)> = Vec::new();
+    
     loop {
         print!("{RED}> {RESET}");
         match io::stdout().flush() {
@@ -20,16 +23,40 @@ pub fn start(model: Arc<Mutex<Model>>) -> Result<(), ()> {
                 match io::stdin().read_line(&mut input) {
                     Ok(_n) => {
                         let input = input.trim_end();
+
+                        if input == "exit" { break Ok(()); }
+                        if input.split_whitespace()
+                                .next()
+                                .unwrap_or("") == "open" {
+                            let num = input.split_whitespace().collect::<Vec<_>>()[1];
+                            for r in &prev_results {
+                                if r.0 == num.parse::<usize>().expect("not a number!") {
+                                    println!("{GREY}Opening {}...{RESET}", &r.1);
+                                    Command::new("xdg-open")
+                                             .arg(&r.1)
+                                             .spawn()
+                                             .expect("xdg-open command failed to start");
+                                }
+                            }
+                        }
+
+                        if !input.starts_with("/") { continue; }
                         println!("{GREY}[{input}]{RESET}");
+                        prev_results.clear();
                         let body = &input.chars().collect::<Vec<_>>();
                         let model = model.lock().unwrap();
                         let result = model.search_query(&body); 
 
                         let max = if result.len() > 30 { 30 as usize } else { result.len() };
 
-                        for r in &result[..max] {
+                        let results = &result[..max];
+                        for r in results {
                             if r.1 > 0.0 {
-                                println!(" - {} ({})", r.0.display(), r.1);
+                                let count = results.iter().position(|x| x == r).unwrap() + 1;
+                                let name = format!("{}", r.0.display());
+                                println!(" {:>3} {} ({})", count, name, r.1);
+                                
+                                prev_results.push((count, name));
                             }
                         }
                         println!("");
